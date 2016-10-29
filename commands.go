@@ -2,13 +2,15 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/dustin/go-humanize"
 	"github.com/shirou/gopsutil/host"
-	"github.com/shirou/gopsutil/load"
 	"github.com/shirou/gopsutil/mem"
 )
 
@@ -81,10 +83,10 @@ func helpCommand(session *discordgo.Session, message *discordgo.MessageCreate, a
 		var output = "Registered commands: "
 
 		for _, cmd := range commands {
-			output += strings.ToLower(CONFIG.Prefix + cmd.Name)
+			output += strings.ToLower(CONFIG.Prefix+cmd.Name) + ", "
 		}
 
-		sendMessage(session, message.ChannelID, output)
+		sendMessage(session, message.ChannelID, strings.TrimSuffix(output, ", "))
 	}
 	if len(args) == 3 && strings.ToLower(args[1]) == "find" {
 		var cmd = findCommand(strings.ToLower(args[2]))
@@ -110,34 +112,50 @@ func helpCommand(session *discordgo.Session, message *discordgo.MessageCreate, a
 	}
 }
 
+func getTime(t uint64) string {
+	s := strconv.FormatUint(t, 10)
+	d, _ := time.ParseDuration(s)
+	o := time.Unix(time.Now().Unix()-int64(t), 0)
+	fmt.Println(t)
+	fmt.Println(int64(t))
+	fmt.Println(s)
+	fmt.Println(d)
+	fmt.Println(o)
+	return humanize.Time(o)
+}
+
 func infoCommand(session *discordgo.Session, message *discordgo.MessageCreate, args []string) {
 	var output string
 	m, _ := mem.VirtualMemory()
 	h, _ := host.Info()
-	l, _ := load.Avg()
-	ls, _ := load.Misc()
-	fmt.Printf("%#v\n", m)
-	fmt.Printf("%#v\n", h)
-	fmt.Printf("%#v\n", l)
-	fmt.Printf("%#v\n", ls)
+	stats := runtime.MemStats{}
+	runtime.ReadMemStats(&stats)
 	output += "***BOT INFO***\n"
-	output += "**Uptime:** " + string(time.Since(BOT.StartTime)) + "\n"
-	output += "***SERVER INFO***\n"
-	output += "**Uptime:** " + string(h.Uptime) + "\n"
+	output += "**Uptime:** " + humanize.Time(BOT.StartTime) + "\n"
+	output += "**Discordgo:** " + discordgo.VERSION + "\n"
+	output += "**Go:** " + runtime.Version() + "\n"
+	output += "**Bot:** v." + BOT.Version + "\n"
+	output += "**Allocated Ram:** " + humanize.Bytes(stats.TotalAlloc) + "\n"
+	output += "**Total Allocated Ram:** " + humanize.Bytes(stats.Alloc) + "\n"
+	output += "**Bot Obtained Ram:** " + humanize.Bytes(stats.Sys) + "\n"
+	output += "\n***SERVER INFO***\n"
+	output += "**Uptime:** " + getTime(h.Uptime) + "\n"
 	output += "**OS:** " + h.OS + "\n"
-	output += "**Total Ram:** " + strconv.FormatFloat(float64(m.Total)/1024/1024/1024, 'f', 2, 32) + "GB\n"
-	output += "**Available Ram:** " + strconv.FormatFloat(float64(m.Available)/1024/1024/1024, 'f', 2, 32) + "GB\n"
-	output += "**Used Ram:** " + strconv.FormatFloat(float64(m.Used)/1024/1024/1024, 'f', 2, 32) + "GB (*" + strconv.FormatFloat(m.UsedPercent, 'f', -1, 32) + "%*)\n"
+	output += "**Total Ram:** " + humanize.Bytes(m.Total) + "\n"
+	output += "**Available Ram:** " + humanize.Bytes(m.Available) + "\n"
+	output += "**Used Ram:** " + humanize.Bytes(m.Used) + " (*" + strconv.FormatFloat(m.UsedPercent, 'f', -1, 32) + "%*)\n"
 
 	sendMessage(session, message.ChannelID, output)
 }
 
 func shutdownCommand(session *discordgo.Session, message *discordgo.MessageCreate, args []string) {
 	sendMessage(session, message.ChannelID, "***Shutting down, good bye cruel world!***")
-	close(runChan)
+	os.Exit(1)
 }
 
 func restartCommand(session *discordgo.Session, message *discordgo.MessageCreate, args []string) {
+	sendMessage(session, message.ChannelID, "***Why you rebooting me, icri!***")
+	os.Exit(2)
 }
 
 func smiteCommand(session *discordgo.Session, message *discordgo.MessageCreate, args []string) {
@@ -150,6 +168,13 @@ func smiteCommand(session *discordgo.Session, message *discordgo.MessageCreate, 
 			for _, god := range gods {
 				fmt.Printf("%#v\n", god)
 			}*/
+		}
+		if args[1] == "update" {
+			SMITE.UpdateGods()
+
+			for _, god := range SMITE.Gods {
+				fmt.Printf("%#v\n", god)
+			}
 		}
 	}
 }

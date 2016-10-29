@@ -20,11 +20,11 @@ type Command struct {
 // Group is an exported type that
 // contains the permission for running
 // certain commands, uses discord roles
-type Group struct {
+/*type Group struct {
 	Name        string
 	Members     []string
 	Permissions []string
-}
+}*/
 
 // Bot is an exported type that
 // contains the basic information
@@ -37,6 +37,7 @@ type Bot struct {
 	Description string
 	Author      string
 	Website     string
+	Session     *discordgo.Session
 }
 
 // Config is an exported type that

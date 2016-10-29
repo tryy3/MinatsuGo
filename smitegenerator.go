@@ -9,7 +9,7 @@ import (
 func getGods(settings map[string][]string) []*Gods {
 	outGod := []*Gods{}
 
-	for _, God := range GODS {
+	/*for _, God := range GODS {
 		for _, setting := range args {
 			if (settings["Name"] != nil && stringInSlice(God.Name, settings["Name"])) ||
 				((settings[""]))
@@ -23,7 +23,7 @@ func getGods(settings map[string][]string) []*Gods {
 				break
 			}
 		}
-	}
+	}*/
 	return outGod
 }
 

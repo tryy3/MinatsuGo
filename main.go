@@ -9,13 +9,22 @@ import (
 )
 
 var (
-	// BOT is an instance of the Bot struct
+	// BOT is a global variable containing
+	// basic bot information like startime, version, ID etc.
 	BOT *Bot
 
-	// CONFIG is an instance of the Config struct
+	// CONFIG is a global variable containing
+	// basic config information like token, debug etc.
 	CONFIG *Config
 
-	runChan chan struct{}
+	// SMITE is a global variable containing
+	// the smite related functions
+	SMITE *Smite
+
+	// PERMISSION is a global instance of
+	// the permission related functions
+	// like hasPermission()
+	PERMISSION *PermissionHandler
 )
 
 func init() {
@@ -33,41 +42,58 @@ func init() {
 		DebugChannel: "",
 		Prefix:       "!",
 	}
+
+	SMITE = &Smite{}
+
+	PERMISSION = &PermissionHandler{}
 }
 
 func main() {
+	// Load new config (create if not existed)
 	err := loadConfiguration("config.json", CONFIG)
-
 	if err != nil {
 		fmt.Println("Error reading configuration,", err)
 		return
 	}
 
-	// create a new Discord session using the token supplied in the command line
+	// Load all the permissions, such as group and user permissions.
+	err = PERMISSION.load()
+	if err != nil {
+		fmt.Println("Error loading permissions,", err)
+		return
+	}
+
+	// Create a new Discord session
 	discord, err := discordgo.New(CONFIG.Token)
 	if err != nil {
 		fmt.Println("Error creating a Discord session,", err)
 		return
 	}
 
+	// Get the bot user
 	user, err := discord.User("@me")
 	if err != nil {
 		fmt.Println("error obtaining account details,", err)
+		return
 	}
 
+	// Save the bots ID for later use
 	BOT.ID = user.ID
 
+	// Add a discord chat handler
 	discord.AddHandler(readChat)
 
+	// Open/start a discord connection
 	err = discord.Open()
 	if err != nil {
 		fmt.Println("Error opening connection,", err)
 		return
 	}
 
-	fmt.Println("Bot is now running. Precc CTRL-C to exit.")
-	runChan := make(chan struct{})
-	<-runChan
+	BOT.Session = discord
+
+	fmt.Println("Bot is now running. Press CTRL-C to exit.")
+	<-make(chan struct{})
 	return
 }
 
@@ -93,6 +119,11 @@ func readChat(session *discordgo.Session, message *discordgo.MessageCreate) {
 	}
 
 	args := strings.Split(message.Content, " ")
+
+	if !PERMISSION.hasPermission(message.Message, "minatsugo.command."+strings.TrimPrefix(args[0], CONFIG.Prefix)) {
+		sendMessage(session, message.ChannelID, "You do not have permission to use this command.")
+		return
+	}
 
 	command := findCommand(strings.TrimPrefix(args[0], CONFIG.Prefix))
 

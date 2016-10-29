@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"io/ioutil"
 	"os"
 )
 
@@ -17,18 +18,10 @@ func loadConfiguration(file string, v interface{}) (err error) {
 }
 
 func saveConfiguration(file string, v interface{}) (err error) {
-	f, err := os.Open(file)
-
-	if !os.IsExist(err) {
-		f, err = os.Create(file)
-
-		if err != nil {
-			return err
-		}
+	b, err := json.MarshalIndent(v, "", "  ")
+	if err != nil {
+		return err
 	}
 
-	encoder := json.NewEncoder(f)
-	err = encoder.Encode(v)
-
-	return err
+	return ioutil.WriteFile(file, b, os.FileMode(0644))
 }

@@ -1,0 +1,16 @@
+{
+  "Groups": {
+    "241843693655425027": {
+      "Permissions": [
+        "MinatsuGo.command.exampleGroup"
+      ]
+    }
+  },
+  "Users": {
+    "241841671459962880": {
+      "Permissions": [
+        "MinatsuGo.command.exampleUser"
+      ]
+    }
+  }
+}
